@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NeuralNetwork
 {
-    class NeuralNetwork
+    public class NeuralNetwork
     {
         public Topology Topology { get; }
         public List<Layer> Layers { get; }
@@ -26,12 +26,33 @@ namespace NeuralNetwork
             CreateOutputLayer();
         }
 
-        public double FeedForward(double[] inputSignals)
+        public List<Neuron> FeedForward(double[] inputSignals)
         {
             //check if count of inputsSignals equal count of input neurons
             if(inputSignals.Length != Topology.InputCount)
             {
                 throw new Exception("Count of input signals doesn't equal count of input neurons");
+            }
+
+            SendSignalsToInputNeurons(inputSignals);
+            FeedForwardAllLayersAfterInput();
+
+            //return all neurons on last layer
+            return Layers.Last().Neurons;
+        }
+
+        private void FeedForwardAllLayersAfterInput()
+        {
+            //begin from second layer
+            for (int i = 1; i < Layers.Count; i++)
+            {
+                var layer = Layers[i];
+                var prevLayer = Layers[i - 1];
+
+                foreach(var neuron in layer.Neurons)
+                {
+                    neuron.FeedForward(prevLayer.GetSignals());
+                }
             }
         }
 
@@ -39,9 +60,10 @@ namespace NeuralNetwork
         {
             for (int i = 0; i < inputSignals.Length; i++)
             {
-                var neuron = Layers[0].Neurons[i];
+                var signal = new double[] { inputSignals[i] }; //create array with 1 element
+                var neuron = Layers[0].Neurons[i]; //get neuron from input layer
 
-                neuron.FeedForward(inputSignals[i]);
+                neuron.FeedForward(signal);
             }
         }
 
@@ -56,7 +78,7 @@ namespace NeuralNetwork
                 outputNeurons.Add(neuron);
             }
 
-            var outputLayer = new Layer(outputNeurons);
+            var outputLayer = new Layer(outputNeurons, NeuronType.Output);
             Layers.Add(outputLayer);
         }
 
